@@ -40,7 +40,8 @@ data class Messages(
     val claimedAll: String = "&aVoce resgatou &e%count% &arecompensas de uma vez!",
     val reloaded: String = "&aConfig recarregada. &7(%count% niveis)",
     val playersOnly: String = "&cSo jogador pode usar esse comando.",
-    val resetDone: String = "&aAs recompensas de &e%player% &aforam resetadas."
+    val resetDone: String = "&aAs recompensas de &e%player% &aforam resetadas.",
+    val storageError: String = "&cNao consegui salvar seu resgate agora. Tenta de novo em instantes."
 )
 
 data class RewardsConfig(
@@ -50,6 +51,7 @@ data class RewardsConfig(
     val aliases: List<String> = listOf("pokerewards", "pokedexrewards"),
     /** CAUGHT = so capturados contam. SEEN = vistos tambem contam. */
     val metric: Metric = Metric.CAUGHT,
+    val storage: StorageSettings = StorageSettings(),
     val gui: GuiSettings = GuiSettings(),
     val messages: Messages = Messages(),
     val tiers: List<RewardTier> = defaultTiers()

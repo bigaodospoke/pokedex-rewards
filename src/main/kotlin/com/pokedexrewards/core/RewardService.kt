@@ -3,14 +3,15 @@ package com.pokedexrewards.core
 import com.pokedexrewards.PokedexRewards
 import com.pokedexrewards.config.RewardTier
 import com.pokedexrewards.util.Chat
-import net.minecraft.server.level.ServerPlayer
 import com.pokedexrewards.util.Sounds
+import net.minecraft.server.level.ServerPlayer
 
 enum class TierState { LOCKED, AVAILABLE, CLAIMED }
 
 sealed interface ClaimResult {
     data object Locked : ClaimResult
     data object AlreadyClaimed : ClaimResult
+    data object StorageError : ClaimResult
     data class Success(val tier: RewardTier) : ClaimResult
 }
 
@@ -23,18 +24,25 @@ object RewardService {
     }
 
     fun claim(player: ServerPlayer, tier: RewardTier, progress: DexProgress): ClaimResult {
+        // Checagem barata, so pra evitar ida ao banco no caso obvio.
         if (PokedexRewards.claims.hasClaimed(player.uuid, tier.percent)) return ClaimResult.AlreadyClaimed
         if (!progress.hasReached(tier.percent)) return ClaimResult.Locked
 
-        // Marca antes de rodar os comandos: se algum comando falhar, o jogador
-        // fala com a staff. Se marcasse depois, um erro no meio da lista daria
-        // para resgatar de novo e duplicar o que ja tinha caido.
-        PokedexRewards.claims.markClaimed(player.uuid, tier.percent)
-        runCommands(player, tier)
-        announce(player, tier)
+        // Quem decide e o armazenamento, nao o cache: e a unica checagem que
+        // vale numa rede, onde outro servidor pode ter registrado antes.
+        // Os comandos so rodam depois que o resgate esta gravado.
+        return when (PokedexRewards.claims.tryClaim(player.uuid, tier.percent)) {
+            ClaimOutcome.ALREADY_CLAIMED -> ClaimResult.AlreadyClaimed
 
-        Sounds.play(player, PokedexRewards.config.gui.claimSound, 0.7f, 1.2f)
-        return ClaimResult.Success(tier)
+            ClaimOutcome.STORAGE_ERROR -> ClaimResult.StorageError
+
+            ClaimOutcome.CLAIMED -> {
+                runCommands(player, tier)
+                announce(player, tier)
+                Sounds.play(player, PokedexRewards.config.gui.claimSound, 0.7f, 1.2f)
+                ClaimResult.Success(tier)
+            }
+        }
     }
 
     /** Resgata tudo que estiver liberado, do menor tier para o maior. */

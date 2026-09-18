@@ -65,7 +65,42 @@ A ideia é virar uma skin exclusiva depois — quando tiver, é só trocar o
 
 ## Onde ficam os resgates
 
-`mundo/pokedexrewards/claims.json`. Salva a cada resgate e no desligamento.
+Depende do `storage.mode` na config:
+
+| Modo | Onde grava |
+| --- | --- |
+| `AUTO` (padrão) | segue o `storageFormat` do Cobblemon |
+| `JSON` | `mundo/pokedexrewards/claims.json` |
+| `MONGODB` | coleção `PokedexRewardsClaims` no mesmo banco do Cobblemon |
+
+### Rede com vários servidores
+
+Arquivo local **não serve** em rede: cada mundo tem o seu, então o jogador
+resgata o mesmo prêmio em cada servidor. Duas coisas precisam estar
+compartilhadas:
+
+**1. A Pokédex** — é config do Cobblemon, não deste mod. Em
+`config/cobblemon/main.json`, em todos os servidores:
+
+```json
+"storageFormat": "mongodb",
+"mongoDBConnectionString": "mongodb://host:27017",
+"mongoDBDatabaseName": "cobblemon"
+```
+
+**2. Os resgates** — com o `storage.mode` em `AUTO`, eles seguem o Cobblemon
+sozinhos e vão pro mesmo banco. Não precisa configurar nada a mais.
+
+Se quiser um banco separado só pros resgates, preencha
+`mongoConnectionString` e `mongoDatabase` na seção `storage`.
+
+O registro do resgate é uma operação atômica (`$addToSet` + `modifiedCount`),
+então dois servidores tentando ao mesmo tempo resultam em um só ganhando. Os
+comandos da recompensa só rodam depois que o resgate está gravado.
+
+Se o Mongo for pedido e não conectar, os resgates ficam **bloqueados** em vez
+de cair pro arquivo local — cair de volta traria o bug de volta em silêncio. O
+menu continua abrindo e o erro aparece no log.
 
 ## Compilar
 

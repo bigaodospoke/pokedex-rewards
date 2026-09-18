@@ -205,6 +205,8 @@ class RewardsGui(private val viewer: ServerPlayer) : SimpleGui(MenuType.GENERIC_
                 render()
             }
 
+            ClaimResult.StorageError -> deny(cfg.messages.storageError, tier)
+
             ClaimResult.Locked -> deny(cfg.messages.locked, tier)
         }
     }

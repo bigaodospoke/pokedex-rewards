@@ -1,79 +1,62 @@
 package com.pokedexrewards.core
 
-import com.google.gson.GsonBuilder
-import com.google.gson.reflect.TypeToken
-import net.minecraft.server.MinecraftServer
-import net.minecraft.world.level.storage.LevelResource
-import org.slf4j.LoggerFactory
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.StandardCopyOption
+import com.pokedexrewards.PokedexRewards
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
 
 /**
- * Guarda quais tiers cada jogador ja resgatou, em
- * `<mundo>/pokedexrewards/claims.json`.
+ * Cache dos resgates dos jogadores online, em cima de um [ClaimStorage].
  *
- * Fica junto do mundo (e nao em config/) de proposito: resetar o mundo
- * reseta os resgates, e backup do mundo leva os resgates junto.
+ * O menu le do cache para nao bater no banco a cada abertura. O resgate em si
+ * nunca passa pelo cache: vai direto no [ClaimStorage.tryClaim], que e a unica
+ * coisa que garante que o premio sai uma vez so na rede inteira.
  */
-class ClaimStore(server: MinecraftServer) {
+class ClaimStore(val storage: ClaimStorage) {
 
-    private val file: Path = server.getWorldPath(LevelResource.ROOT)
-        .resolve("pokedexrewards")
-        .resolve("claims.json")
+    private val cache = ConcurrentHashMap<UUID, MutableSet<Int>>()
 
-    private val claims = HashMap<UUID, MutableSet<Int>>()
+    private val io = Executors.newSingleThreadExecutor { runnable ->
+        Thread(runnable, "PokedexRewards Claims IO").apply { isDaemon = true }
+    }
 
-    fun load() {
-        claims.clear()
-        if (Files.notExists(file)) return
-        try {
-            val type = object : TypeToken<Map<String, List<Int>>>() {}.type
-            val raw: Map<String, List<Int>> = Files.newBufferedReader(file).use { GSON.fromJson(it, type) }
-                ?: emptyMap()
-            raw.forEach { (key, tiers) ->
-                val uuid = runCatching { UUID.fromString(key) }.getOrNull() ?: return@forEach
-                claims[uuid] = tiers.toMutableSet()
-            }
-            LOGGER.info("Resgates carregados para {} jogador(es).", claims.size)
-        } catch (e: Exception) {
-            LOGGER.error("Nao consegui ler claims.json, comecando vazio. Erro: {}", e.message)
+    /** Carrega fora da thread principal, para o login nao esperar o banco. */
+    fun preloadAsync(playerId: UUID) {
+        io.execute {
+            runCatching { cache[playerId] = storage.load(playerId) }
+                .onFailure { PokedexRewards.LOGGER.error("Falha ao pre-carregar resgates: {}", it.message) }
         }
     }
 
-    fun save() {
-        try {
-            file.parent?.let { Files.createDirectories(it) }
-            val raw = claims.entries.associate { (uuid, tiers) -> uuid.toString() to tiers.sorted() }
-            val tmp = file.resolveSibling("claims.json.tmp")
-            Files.writeString(tmp, GSON.toJson(raw))
-            try {
-                Files.move(tmp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
-            } catch (_: Exception) {
-                Files.move(tmp, file, StandardCopyOption.REPLACE_EXISTING)
-            }
-        } catch (e: Exception) {
-            LOGGER.error("Nao consegui salvar claims.json: {}", e.message)
+    fun unload(playerId: UUID) {
+        cache.remove(playerId)
+    }
+
+    fun claimedTiers(playerId: UUID): Set<Int> =
+        cache.getOrPut(playerId) { storage.load(playerId) }
+
+    fun hasClaimed(playerId: UUID, tierPercent: Int): Boolean =
+        claimedTiers(playerId).contains(tierPercent)
+
+    fun tryClaim(playerId: UUID, tierPercent: Int): ClaimOutcome {
+        val outcome = storage.tryClaim(playerId, tierPercent)
+        when (outcome) {
+            ClaimOutcome.CLAIMED -> cache.getOrPut(playerId) { mutableSetOf() }.add(tierPercent)
+            // Outro servidor registrou primeiro: o cache daqui esta velho.
+            ClaimOutcome.ALREADY_CLAIMED -> cache[playerId] = storage.load(playerId)
+            ClaimOutcome.STORAGE_ERROR -> Unit
         }
+        return outcome
     }
 
-    fun claimedTiers(uuid: UUID): Set<Int> = claims[uuid] ?: emptySet()
-
-    fun hasClaimed(uuid: UUID, tierPercent: Int): Boolean = claimedTiers(uuid).contains(tierPercent)
-
-    fun markClaimed(uuid: UUID, tierPercent: Int) {
-        claims.getOrPut(uuid) { mutableSetOf() }.add(tierPercent)
-        save()
+    fun reset(playerId: UUID) {
+        storage.reset(playerId)
+        cache.remove(playerId)
     }
 
-    fun reset(uuid: UUID) {
-        claims.remove(uuid)
-        save()
-    }
-
-    private companion object {
-        val LOGGER = LoggerFactory.getLogger("PokedexRewards/Claims")
-        val GSON = GsonBuilder().setPrettyPrinting().create()
+    fun shutdown() {
+        io.shutdown()
+        storage.flush()
+        storage.close()
     }
 }
