@@ -1,0 +1,12 @@
+.gradle/
+build/
+run/
+.kotlin/
+*.log
+.idea/
+*.iml
+
+# artefatos de build na raiz (o jar vai como release, nao no repo)
+# o / no inicio evita pegar o gradle/wrapper/gradle-wrapper.jar
+/pokedex-rewards-*.jar
+/pokedex-rewards-*.zip

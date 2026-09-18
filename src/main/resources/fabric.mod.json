@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "pokedexrewards",
+  "version": "${version}",
+  "name": "Pokedex Rewards",
+  "description": "Da um motivo pra Pokedex existir: /poke abre um menu com a sua porcentagem e libera recompensas a cada faixa completada, terminando numa skin exclusiva nos 100%.",
+  "authors": [
+    "bigao"
+  ],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      {
+        "adapter": "kotlin",
+        "value": "com.pokedexrewards.PokedexRewards"
+      }
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-api": "*",
+    "fabric-language-kotlin": ">=1.13.0",
+    "cobblemon": ">=1.8.0"
+  }
+}
