@@ -105,6 +105,3 @@ menu continua abrindo e o erro aparece no log.
 ## Compilar
 
 Precisa de JDK 21. `gradlew.bat build` — o jar sai em `build/libs/`.
-
-O build não funciona com o projeto dentro do OneDrive (o Kotlin não consegue
-limpar o cache). Mantenha o projeto fora dele, tipo `C:\dev\pokedex-rewards`.
