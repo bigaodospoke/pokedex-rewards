@@ -41,7 +41,24 @@ data class Messages(
     val reloaded: String = "&aConfig recarregada. &7(%count% niveis)",
     val playersOnly: String = "&cSo jogador pode usar esse comando.",
     val resetDone: String = "&aAs recompensas de &e%player% &aforam resetadas.",
-    val storageError: String = "&cNao consegui salvar seu resgate agora. Tenta de novo em instantes."
+    val storageError: String = "&cNao consegui salvar seu resgate agora. Tenta de novo em instantes.",
+    val missionComplete: String = "&a✔ Missao completa: &f%mission%&a! Resgate em &e/poke missoes&a.",
+    val missionClaimed: String = "&aRecompensa da missao &f%mission% &aresgatada!",
+    val missionIncomplete: String = "&cEssa missao ainda nao esta completa.",
+    val missionAlreadyClaimed: String = "&cVoce ja resgatou essa missao.",
+    val missionsDisabled: String = "&cAs missoes estao desativadas neste servidor.",
+    val captureLogEmpty: String = "&eVoce ainda nao capturou nenhum Pokemon."
+)
+
+data class CaptureLogConfig(
+    val enabled: Boolean = true,
+    /** Abrir o diario com shift + clique direito segurando qualquer Pokedex. */
+    val openWithPokedexItem: Boolean = true,
+    val dateFormat: String = "dd/MM/yyyy HH:mm",
+    /** Mostra em qual mundo/servidor a captura aconteceu. Util em rede. */
+    val showServerName: Boolean = true,
+    /** Nome deste servidor no diario. Vazio = usa o nome do mundo. */
+    val serverName: String = ""
 )
 
 data class RewardsConfig(
@@ -53,6 +70,8 @@ data class RewardsConfig(
     val metric: Metric = Metric.CAUGHT,
     val storage: StorageSettings = StorageSettings(),
     val gui: GuiSettings = GuiSettings(),
+    val missions: MissionsConfig = MissionsConfig(),
+    val captureLog: CaptureLogConfig = CaptureLogConfig(),
     val messages: Messages = Messages(),
     val tiers: List<RewardTier> = defaultTiers()
 )

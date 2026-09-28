@@ -3,6 +3,8 @@ package com.pokedexrewards.command
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.context.CommandContext
 import com.pokedexrewards.PokedexRewards
+import com.pokedexrewards.gui.CaptureLogGui
+import com.pokedexrewards.gui.MissionsGui
 import com.pokedexrewards.gui.RewardsGui
 import com.pokedexrewards.util.Chat
 import net.minecraft.commands.CommandSourceStack
@@ -18,6 +20,8 @@ object PokeCommand {
         val root = dispatcher.register(
             Commands.literal(config.command)
                 .executes(::openMenu)
+                .then(Commands.literal("missoes").executes(::openMissions))
+                .then(Commands.literal("diario").executes(::openCaptureLog))
                 .then(
                     Commands.literal("reload")
                         .requires { it.hasPermission(2) }
@@ -47,6 +51,18 @@ object PokeCommand {
     private fun openMenu(ctx: CommandContext<CommandSourceStack>): Int {
         val player = playerOrWarn(ctx) ?: return 0
         RewardsGui(player).open()
+        return 1
+    }
+
+    private fun openMissions(ctx: CommandContext<CommandSourceStack>): Int {
+        val player = playerOrWarn(ctx) ?: return 0
+        MissionsGui(player).open()
+        return 1
+    }
+
+    private fun openCaptureLog(ctx: CommandContext<CommandSourceStack>): Int {
+        val player = playerOrWarn(ctx) ?: return 0
+        CaptureLogGui(player).open()
         return 1
     }
 

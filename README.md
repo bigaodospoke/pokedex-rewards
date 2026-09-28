@@ -19,6 +19,8 @@ Sobe o servidor uma vez — ele cria `config/pokedexrewards.json`.
 | Comando | Permissão |
 | --- | --- |
 | `/poke` — abre o menu | todos |
+| `/poke missoes` — missões diárias, semanais e mensais | todos |
+| `/poke diario` — diário de capturas | todos |
 | `/poke reload` — recarrega a config | op nível 2 |
 | `/poke reset <jogador>` — apaga os resgates dele | op nível 2 |
 
@@ -63,7 +65,61 @@ Hoje entrega um **Mewtwo shiny nível 100**, só de exemplo pra mostrar o format
 A ideia é virar uma skin exclusiva depois — quando tiver, é só trocar o
 `commands` desse nível na config.
 
-## Onde ficam os resgates
+## Missões diárias, semanais e mensais
+
+Todas envolvem capturar. São **sorteadas pelo mod**, não escritas na mão: a cada
+período ele sorteia 3 de cada tipo a partir dos modelos da config.
+
+O sorteio usa o período como semente, então é o mesmo para todo mundo no
+servidor e não muda se o servidor reiniciar no meio do dia.
+
+Tipos de missão que o gerador pode sortear:
+
+| Tipo | Missão |
+| --- | --- |
+| `CATCH_ANY` | capture N Pokémon |
+| `CATCH_SHINY` | capture N shiny |
+| `CATCH_TYPE` | capture N de um tipo sorteado |
+| `CATCH_NEW_SPECIES` | capture N espécies que você nunca pegou |
+| `CATCH_LEGENDARY` | capture N lendários |
+
+Recompensas por período (diária básica → mensal a melhor), configuráveis em
+`missions.daily`, `missions.weekly` e `missions.monthly`:
+
+```json
+"daily": {
+  "missionCount": 3,
+  "templates": [
+    { "kind": "CATCH_ANY", "minTarget": 8, "maxTarget": 15 },
+    { "kind": "CATCH_TYPE", "minTarget": 3, "maxTarget": 6 }
+  ],
+  "rewardsDisplay": ["&f10x &7Poke Ball"],
+  "commands": ["give %player% cobblemon:poke_ball 10"]
+}
+```
+
+Abre com `/poke missoes` ou pelo botão no menu principal. O reset usa o fuso de
+`missions.timezone` (padrão `America/Sao_Paulo`).
+
+## Diário de capturas
+
+Estilo Pokémon GO: para cada espécie, onde e quando você pegou pela última vez,
+e quantas vezes já pegou.
+
+Abre de dois jeitos:
+
+- **Shift + clique direito segurando qualquer Pokédex** do Cobblemon
+- `/poke diario`, ou o botão no menu principal
+
+O diário mostra bioma, dimensão, data/hora e — em rede — em qual servidor foi.
+Ordenado da captura mais recente para a mais antiga, paginado.
+
+> Isso **não** altera a tela da Pokédex do Cobblemon. Aquela tela é do cliente;
+> mexer nela exigiria um mod no cliente de cada jogador. O diário é um
+> inventário mandado pelo servidor, então continua funcionando sem ninguém
+> instalar nada.
+
+## Onde ficam os dados
 
 Depende do `storage.mode` na config:
 

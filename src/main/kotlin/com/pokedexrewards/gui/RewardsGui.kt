@@ -8,6 +8,9 @@ import com.pokedexrewards.core.DexProgress
 import com.pokedexrewards.core.Progress
 import com.pokedexrewards.core.RewardService
 import com.pokedexrewards.core.TierState
+import com.pokedexrewards.missions.MissionScope
+import com.pokedexrewards.missions.MissionService
+import com.pokedexrewards.missions.MissionState
 import com.pokedexrewards.util.Chat
 import com.pokedexrewards.util.Sounds
 import eu.pb4.sgui.api.elements.GuiElementBuilder
@@ -69,6 +72,48 @@ class RewardsGui(private val viewer: ServerPlayer) : SimpleGui(MenuType.GENERIC_
         setSlot(INFO_SLOT, infoElement())
         setSlot(CLAIM_ALL_SLOT, claimAllElement(progress, tiers))
         setSlot(CLOSE_SLOT, closeElement())
+
+        if (cfg.missions.enabled) setSlot(MISSIONS_SLOT, missionsElement())
+        if (cfg.captureLog.enabled) setSlot(CAPTURE_LOG_SLOT, captureLogElement())
+    }
+
+    private fun missionsElement(): GuiElementInterface {
+        val ready = MissionScope.entries.sumOf { scope ->
+            MissionService.activeMissions(scope).count { MissionService.stateOf(viewer, it) == MissionState.COMPLETE }
+        }
+
+        val builder = GuiElementBuilder(Items.CLOCK)
+            .setName(Chat.of("&a&lMISSOES"))
+            .addLoreLine(Component.empty())
+            .addLoreLine(Chat.of("&7Diarias, semanais e mensais."))
+            .addLoreLine(Chat.of("&7Todas envolvem capturar Pokemon."))
+            .addLoreLine(Component.empty())
+
+        if (ready > 0) {
+            builder.glow()
+                .setCount(ready.coerceIn(1, 64))
+                .addLoreLine(Chat.of("&a$ready missao(oes) pronta(s) pra resgatar!"))
+        } else {
+            builder.addLoreLine(Chat.of("&8Nenhuma completa agora."))
+        }
+
+        builder.addLoreLine(Chat.of("&e▶ Clique para abrir"))
+            .setCallback(GuiElementInterface.ClickCallback { _, _, _, _ -> MissionsGui(viewer).open() })
+        return builder.build()
+    }
+
+    private fun captureLogElement(): GuiElementInterface {
+        val captures = PokedexRewards.claims.captures(viewer.uuid)
+        return GuiElementBuilder(Items.MAP)
+            .setName(Chat.of("&b&lDIARIO DE CAPTURAS"))
+            .addLoreLine(Component.empty())
+            .addLoreLine(Chat.of("&7Onde e quando voce pegou"))
+            .addLoreLine(Chat.of("&7cada Pokemon."))
+            .addLoreLine(Component.empty())
+            .addLoreLine(Chat.of("&7Especies registradas: &f${captures.size}"))
+            .addLoreLine(Chat.of("&e▶ Clique para abrir"))
+            .setCallback(GuiElementInterface.ClickCallback { _, _, _, _ -> CaptureLogGui(viewer).open() })
+            .build()
     }
 
     // ----------------------------------------------------------- elementos
@@ -263,6 +308,8 @@ class RewardsGui(private val viewer: ServerPlayer) : SimpleGui(MenuType.GENERIC_
         const val INFO_SLOT = 45
         const val CLAIM_ALL_SLOT = 49
         const val CLOSE_SLOT = 53
+        const val MISSIONS_SLOT = 47
+        const val CAPTURE_LOG_SLOT = 51
 
         /** Primeiro slot de cada linha usada pelos tiers normais. */
         val TIER_ROWS = intArrayOf(18, 27)
