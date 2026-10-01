@@ -15,8 +15,20 @@
         "adapter": "kotlin",
         "value": "com.pokedexrewards.PokedexRewards"
       }
+    ],
+    "client": [
+      {
+        "adapter": "kotlin",
+        "value": "com.pokedexrewards.client.PokedexRewardsClient"
+      }
     ]
   },
+  "mixins": [
+    {
+      "config": "pokedexrewards.mixins.json",
+      "environment": "client"
+    }
+  ],
   "depends": {
     "fabricloader": ">=0.16.0",
     "minecraft": "~1.21.1",

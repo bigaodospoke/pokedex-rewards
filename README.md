@@ -101,6 +101,72 @@ Recompensas por período (diária básica → mensal a melhor), configuráveis e
 Abre com `/poke missoes` ou pelo botão no menu principal. O reset usa o fuso de
 `missions.timezone` (padrão `America/Sao_Paulo`).
 
+## Voz da Pokédex
+
+Ao selecionar um Pokémon na Pokédex do Cobblemon, uma voz narra a entrada —
+nome, tipagem e a descrição da própria Pokédex:
+
+> *"Venusaur. Pokémon do tipo Planta e Venenoso. Há uma grande flor nas costas
+> do Venusaur. Dizem que a flor adquire cores vivas se receber bastante
+> nutrição e luz solar..."*
+
+São 1025 locuções, uma por espécie, embutidas no jar. Tudo sai dos dados do
+próprio Cobblemon — inclusive os tipos e as descrições em português — então o
+áudio bate exatamente com o texto na tela. Os 526 Pokémon de tipo duplo falam
+as duas tipagens.
+
+### ⚠️ Esta é a única parte que exige mod no cliente
+
+O resto do mod é 100% servidor. A voz não dá: o clique na tela da Pokédex
+**não gera pacote para o servidor** — a tela é do cliente e lê dados já
+sincronizados. Dos pacotes serverbound de Pokédex do Cobblemon só existem
+`StartScanningPacket` e `FinishScanningPacket`.
+
+Então a voz usa um mixin em `PokedexGUI.setSelectedEntry`, que roda no cliente.
+Na prática:
+
+- quem **instalar o jar** ouve a voz e usa tudo o mais normalmente
+- quem **não instalar** continua com missões, resgates e diário funcionando —
+  só não ouve a voz
+
+O mixin é declarado como `environment: client`, então o servidor nem carrega.
+
+### Config da voz
+
+Fica separada, em `config/pokedexrewards-voz.json`, na máquina do jogador — é
+ele quem decide se quer ouvir:
+
+```json
+{
+  "enabled": true,
+  "volume": 1.0,
+  "pitch": 1.0,
+  "minIntervalMs": 250,
+  "repeatCooldownMs": 1500
+}
+```
+
+`minIntervalMs` evita falas sobrepostas quando se rola a lista rápido.
+
+### Sobre a voz usada
+
+É a voz `Microsoft Maria` (pt-BR), a versão moderna do Windows — acessada via
+WinRT, não pelo SAPI antigo, que só expõe as vozes robóticas "Desktop". Gerada
+uma vez e embutida como OGG. Não é clone de nenhum dublador.
+
+Para trocar de voz depois (o Windows também tem `Microsoft Daniel`, masculina),
+é só regerar os áudios: o texto de cada locução sai dos dados do Cobblemon.
+
+### Por que não diz "o Pokémon Rato"
+
+A categoria ("Mouse Pokémon") existe na PokéAPI em 11 idiomas, mas **não em
+português** — e em espanhol são palavras inventadas (`Ratón`, `Acuartija`,
+`Abazón`), não tradução literal. Traduzir as 643 categorias seria inventar
+termos, com erro garantido em parte deles.
+
+A descrição da Pokédex, por outro lado, **existe em português** no Cobblemon
+(1025 delas), e é ela que a voz lê depois do nome e da tipagem.
+
 ## Diário de capturas
 
 Estilo Pokémon GO: para cada espécie, onde e quando você pegou pela última vez,
